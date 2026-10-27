@@ -1,0 +1,241 @@
+/* ============================================================
+   PROJE   : NovaStore E-Ticaret Veri Yönetim Sistemi
+   VERITABANI : SQL Server (T-SQL)
+   HAZIRLAYAN : AdSoyad
+   ============================================================ */
+
+-- ============================================================
+-- BÖLÜM 1: VERİ TABANI TASARIMI (DDL)
+-- ============================================================
+
+-- Bölüm 1 / Görev 1: Veri tabanı oluşturma
+-- (Türkçe karakterlerin doğru saklanması için Turkish collation kullanıldı)
+CREATE DATABASE NovaStoreDB COLLATE Turkish_CI_AS;
+GO
+
+USE NovaStoreDB;
+GO
+
+-- Bölüm 1 / Tablo A: Categories
+CREATE TABLE Categories (
+    CategoryID   INT IDENTITY(1,1) PRIMARY KEY,
+    CategoryName VARCHAR(50) NOT NULL
+);
+GO
+
+-- Bölüm 1 / Tablo B: Products
+CREATE TABLE Products (
+    ProductID   INT IDENTITY(1,1) PRIMARY KEY,
+    ProductName VARCHAR(100) NOT NULL,
+    Price       DECIMAL(10,2),
+    Stock       INT DEFAULT 0,
+    CategoryID  INT,
+    CONSTRAINT FK_Products_Categories
+        FOREIGN KEY (CategoryID) REFERENCES Categories(CategoryID)
+);
+GO
+
+-- Bölüm 1 / Tablo C: Customers
+CREATE TABLE Customers (
+    CustomerID INT IDENTITY(1,1) PRIMARY KEY,
+    FullName   VARCHAR(50),
+    City       VARCHAR(20),
+    Email      VARCHAR(100) UNIQUE
+);
+GO
+
+-- Bölüm 1 / Tablo D: Orders
+CREATE TABLE Orders (
+    OrderID     INT IDENTITY(1,1) PRIMARY KEY,
+    CustomerID  INT,
+    OrderDate   DATETIME DEFAULT GETDATE(),
+    TotalAmount DECIMAL(10,2),
+    CONSTRAINT FK_Orders_Customers
+        FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID)
+);
+GO
+
+-- Bölüm 1 / Tablo E: OrderDetails (ara tablo)
+CREATE TABLE OrderDetails (
+    DetailID  INT IDENTITY(1,1) PRIMARY KEY,
+    OrderID   INT,
+    ProductID INT,
+    Quantity  INT,
+    CONSTRAINT FK_OrderDetails_Orders
+        FOREIGN KEY (OrderID) REFERENCES Orders(OrderID),
+    CONSTRAINT FK_OrderDetails_Products
+        FOREIGN KEY (ProductID) REFERENCES Products(ProductID)
+);
+GO
+
+
+-- ============================================================
+-- BÖLÜM 2: VERİ GİRİŞİ (DML - INSERT)
+-- ============================================================
+
+-- Bölüm 2 / Görev 1: 5 adet Kategori
+INSERT INTO Categories (CategoryName) VALUES
+(N'Elektronik'),
+(N'Giyim'),
+(N'Kitap'),
+(N'Kozmetik'),
+(N'Ev ve Yaşam');
+GO
+
+-- Bölüm 2 / Görev 2: 12 adet Ürün (her kategoriden en az 2 ürün)
+INSERT INTO Products (ProductName, Price, Stock, CategoryID) VALUES
+(N'Akıllı Telefon',                      15999.90, 25, 1),
+(N'Kablosuz Kulaklık',                    1299.50, 15, 1),
+(N'Dizüstü Bilgisayar',                  32499.00,  8, 1),
+(N'Erkek Kot Pantolon',                    799.90, 50, 2),
+(N'Kadın Mont',                           1899.00, 12, 2),
+(N'Spor Ayakkabı',                        1499.90, 30, 2),
+(N'Suç ve Ceza',                           120.00,100, 3),
+(N'SQL Server ile Veri Tabanı Yönetimi',   250.00, 18, 3),
+(N'Nemlendirici Krem',                     189.90, 60, 4),
+(N'Parfüm',                                950.00, 10, 4),
+(N'Kahve Makinesi',                       2499.00, 14, 5),
+(N'Nevresim Takımı',                       649.90, 40, 5);
+GO
+
+-- Bölüm 2 / Görev 3: 6 adet Müşteri
+INSERT INTO Customers (FullName, City, Email) VALUES
+(N'Ahmet Yılmaz', N'İstanbul', 'ahmet.yilmaz@mail.com'),
+(N'Ayşe Demir',   N'Ankara',   'ayse.demir@mail.com'),
+(N'Mehmet Kaya',  N'İzmir',    'mehmet.kaya@mail.com'),
+(N'Elif Çelik',   N'Manisa',   'elif.celik@mail.com'),
+(N'Can Arslan',   N'Bursa',    'can.arslan@mail.com'),
+(N'Zeynep Aydın', N'Antalya',  'zeynep.aydin@mail.com');
+GO
+
+-- Bölüm 2 / Görev 4: 10 adet Sipariş (farklı tarihlerde)
+-- TotalAmount değerleri, sipariş detaylarındaki (Fiyat x Adet) toplamıyla uyumludur.
+INSERT INTO Orders (CustomerID, OrderDate, TotalAmount) VALUES
+(1, '2026-01-15',  1539.50),   -- OrderID 1
+(1, '2026-03-10',  1599.80),   -- OrderID 2
+(2, '2026-02-05', 15999.90),   -- OrderID 3
+(2, '2026-05-20',  1519.70),   -- OrderID 4
+(3, '2026-04-12',  3798.80),   -- OrderID 5
+(4, '2026-06-01', 32499.00),   -- OrderID 6
+(4, '2026-07-18',   620.00),   -- OrderID 7
+(5, '2026-08-09',  3398.90),   -- OrderID 8
+(5, '2026-09-14',   379.80),   -- OrderID 9
+(6, '2026-10-02',  1949.40);   -- OrderID 10
+GO
+
+-- Bölüm 2 / Görev 4: Sipariş Detayları
+INSERT INTO OrderDetails (OrderID, ProductID, Quantity) VALUES
+(1, 2, 1),   -- Kablosuz Kulaklık
+(1, 7, 2),   -- Suç ve Ceza
+(2, 4, 2),   -- Erkek Kot Pantolon
+(3, 1, 1),   -- Akıllı Telefon
+(4, 9, 3),   -- Nemlendirici Krem
+(4, 10, 1),  -- Parfüm
+(5, 11, 1),  -- Kahve Makinesi
+(5, 12, 2),  -- Nevresim Takımı
+(6, 3, 1),   -- Dizüstü Bilgisayar
+(7, 8, 2),   -- SQL Server Kitabı
+(7, 7, 1),   -- Suç ve Ceza
+(8, 6, 1),   -- Spor Ayakkabı
+(8, 5, 1),   -- Kadın Mont
+(9, 9, 2),   -- Nemlendirici Krem
+(10, 12, 1), -- Nevresim Takımı
+(10, 2, 1);  -- Kablosuz Kulaklık
+GO
+
+
+-- ============================================================
+-- BÖLÜM 3: SORGULAMA VE ANALİZ (DQL)
+-- ============================================================
+
+-- Bölüm 3 / Soru 1: Temel Listeleme
+-- Stoğu 20'den az olan ürünler, stok miktarına göre azalan sırada
+SELECT ProductName, Stock
+FROM Products
+WHERE Stock < 20
+ORDER BY Stock DESC;
+GO
+
+-- Bölüm 3 / Soru 2: Veri Birleştirme (INNER JOIN)
+-- Hangi müşteri, hangi tarihte sipariş vermiş?
+SELECT c.FullName    AS [Müşteri Adı],
+       c.City        AS [Şehir],
+       o.OrderDate   AS [Sipariş Tarihi],
+       o.TotalAmount AS [Toplam Tutar]
+FROM Customers c
+INNER JOIN Orders o ON c.CustomerID = o.CustomerID
+ORDER BY o.OrderDate;
+GO
+
+-- Bölüm 3 / Soru 3: Çoklu Birleştirme ve Detay Raporu
+-- "Ahmet Yılmaz" isimli müşterinin aldığı ürünler, fiyatları ve kategorileri
+SELECT c.FullName     AS [Müşteri],
+       p.ProductName  AS [Ürün Adı],
+       p.Price        AS [Fiyat],
+       cat.CategoryName AS [Kategori]
+FROM Customers c
+INNER JOIN Orders o         ON c.CustomerID = o.CustomerID
+INNER JOIN OrderDetails od  ON o.OrderID    = od.OrderID
+INNER JOIN Products p       ON od.ProductID = p.ProductID
+INNER JOIN Categories cat   ON p.CategoryID = cat.CategoryID
+WHERE c.FullName = N'Ahmet Yılmaz';
+GO
+
+-- Bölüm 3 / Soru 4: Gruplama ve Aggregate Fonksiyonlar
+-- Hangi kategoride toplam kaç adet ürün var? (LEFT JOIN + GROUP BY + COUNT)
+SELECT cat.CategoryName AS [Kategori],
+       COUNT(p.ProductID) AS [Ürün Sayısı]
+FROM Categories cat
+LEFT JOIN Products p ON cat.CategoryID = p.CategoryID
+GROUP BY cat.CategoryName
+ORDER BY [Ürün Sayısı] DESC;
+GO
+
+-- Bölüm 3 / Soru 5: Ciro Analizi
+-- Her müşterinin toplam cirosu, en çok harcayandan en aza doğru
+SELECT c.FullName AS [Müşteri],
+       SUM(o.TotalAmount) AS [Toplam Ciro]
+FROM Customers c
+INNER JOIN Orders o ON c.CustomerID = o.CustomerID
+GROUP BY c.FullName
+ORDER BY [Toplam Ciro] DESC;
+GO
+
+-- Bölüm 3 / Soru 6: Zaman Analizi
+-- Siparişlerin üzerinden bugüne kadar kaç gün geçtiği
+SELECT OrderID,
+       OrderDate,
+       DATEDIFF(DAY, OrderDate, GETDATE()) AS [Geçen Gün Sayısı]
+FROM Orders
+ORDER BY OrderDate;
+GO
+
+
+-- ============================================================
+-- BÖLÜM 4: İLERİ SEVİYE VERİ TABANI NESNELERİ
+-- ============================================================
+
+-- Bölüm 4 / Görev 1: VIEW oluşturma
+-- Müşteri Adı, Sipariş Tarihi, Ürün Adı ve Adet bilgisini tek tablo gibi getirir
+CREATE VIEW vw_SiparisOzet
+AS
+SELECT c.FullName    AS MusteriAdi,
+       o.OrderDate   AS SiparisTarihi,
+       p.ProductName AS UrunAdi,
+       od.Quantity   AS Adet
+FROM Customers c
+INNER JOIN Orders o        ON c.CustomerID = o.CustomerID
+INNER JOIN OrderDetails od ON o.OrderID    = od.OrderID
+INNER JOIN Products p      ON od.ProductID = p.ProductID;
+GO
+
+-- View'ı test etme
+SELECT * FROM vw_SiparisOzet;
+GO
+
+-- Bölüm 4 / Görev 2: Yedekleme (BACKUP)
+-- Not: C:\Yedek\ klasörünün önceden oluşturulmuş olması gerekir.
+BACKUP DATABASE NovaStoreDB
+TO DISK = 'C:\Yedek\NovaStoreDB.bak'
+WITH FORMAT, INIT, NAME = 'NovaStoreDB Tam Yedek';
+GO
